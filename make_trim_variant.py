@@ -48,6 +48,15 @@ s = s.replace(
   'out_file <- "htmls_20260713/auc_dashboard_20260713_fsmethods_fullVsSmoking.html"',
   'out_file <- "htmls_20260713/auc_dashboard_20260713_fsmethods_fullVsSmoking_normOnly_no3vs0.html"', 1)
 
+# 6) fix the template's hardcoded varcut-explorer datatype default (fpkm no longer
+#    exists -> init() set an invalid value, renderVarcut() threw and halted the rest
+#    of init(), blanking every panel after it). Patch the template string after it is
+#    read in. Anchor = the readLines(template) line.
+tpl_read = 'tpl <- paste(readLines("codes_20260713/dashboard_template_fsmethods_cmp.html", warn = FALSE), collapse = "\\n")'
+fix_line = '''tpl <- gsub("getElementById('vcDatatype').value='fpkm'", "getElementById('vcDatatype').value='normalized'", tpl, fixed = TRUE)'''
+assert tpl_read in s, "template readLines anchor not found"
+s = s.replace(tpl_read, tpl_read + "\n" + fix_line, 1)
+
 changed = sum(1 for a,b in [
   ('dm_lv  <- c("normalized")', s),
   ('cmp_lv <- c("123vs0","12vs0")', s),
@@ -56,7 +65,8 @@ changed = sum(1 for a,b in [
   ('TRIM VARIANT', s),
 ] if a in b)
 io.open(DST, "w", encoding="utf-8").write(s)
-print("wrote", DST, "| edits applied:", changed, "/5")
+print("wrote", DST, "| core edits applied:", changed, "/5")
 for probe in ['dm_lv  <- c("normalized")','cmp_lv <- c("123vs0","12vs0")',
-              '  tasks <- c("123vs0","12vs0")','normOnly_no3vs0.html','TRIM VARIANT']:
+              '  tasks <- c("123vs0","12vs0")','normOnly_no3vs0.html','TRIM VARIANT',
+              "value='normalized'\", tpl, fixed = TRUE)"]:
     print(("OK   " if probe in s else "MISS ")+probe)
