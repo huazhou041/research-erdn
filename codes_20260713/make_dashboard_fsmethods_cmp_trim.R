@@ -184,7 +184,7 @@ build_pop <- function(glm_csv, rfxgb_csv, roc_glm_csv, roc_rfxgb_csv, md_base, g
     n_configs = nrow(d), stable_configs = sum(d$model %in% stable_lv),
     provisional_xgb_configs = sum(!d$model %in% stable_lv),
     models = mod_lv, stable_models = stable_lv,
-    cohorts = coh_lv, datatypes = dm_lv, featuresets = dn_lv, subsets = cmp_lv,
+    cohorts = coh_lv, datatypes = as.list(dm_lv), featuresets = dn_lv, subsets = as.list(cmp_lv),
     varcuts = sort(unique(d$varcut)))
 
   J <- function(x, df="rows") toJSON(x, dataframe = df, auto_unbox = TRUE, na = "null")

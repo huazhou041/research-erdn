@@ -57,6 +57,14 @@ fix_line = '''tpl <- gsub("getElementById('vcDatatype').value='fpkm'", "getEleme
 assert tpl_read in s, "template readLines anchor not found"
 s = s.replace(tpl_read, tpl_read + "\n" + fix_line, 1)
 
+# 7) CRITICAL: dm_lv is now length-1, and META is serialized with auto_unbox=TRUE,
+#    which turns c("normalized") into the JSON *string* "normalized" instead of the
+#    array ["normalized"]. That makes DM_LV a string in JS, so fillSelect(...).forEach
+#    throws and init() halts -> every panel blank. Force list() so it stays an array.
+assert "datatypes = dm_lv," in s, "meta datatypes anchor not found"
+s = s.replace("datatypes = dm_lv,", "datatypes = as.list(dm_lv),", 1)
+s = s.replace("subsets = cmp_lv,", "subsets = as.list(cmp_lv),", 1)
+
 changed = sum(1 for a,b in [
   ('dm_lv  <- c("normalized")', s),
   ('cmp_lv <- c("123vs0","12vs0")', s),
