@@ -808,7 +808,7 @@ function init() {
   document.getElementById('explorerTable').addEventListener('click', function(ev){ var b=ev.target.closest && ev.target.closest('.geneBtn'); if(b){ ev.stopPropagation(); downloadGenesByKey(b.dataset.gk); } });
   document.getElementById('fReset').addEventListener('click', () => { ['fSet','fCohort','fDatatype','fFeatureset','fSubset','fModel','fVarcut','fSearch'].forEach(id => document.getElementById(id).value=''); explorerPage=0; renderExplorer(); });
   document.getElementById('coSlider').addEventListener('input', renderCutoff);
-  document.getElementById('coMode').addEventListener('change', renderCutoff);
+  document.getElementById('coMode').addEventListener('change', populateCutoff);
   document.getElementById('coCurve').addEventListener('change', renderCutoff);
   ['rocSet','rocCohort','rocDatatype','rocFeatureset','rocSubset','rocModel','rocVarcut'].forEach(function(id){ document.getElementById(id).addEventListener('change', populateCutoff); });
   document.getElementById('rocSearch').addEventListener('input', populateCutoff);
@@ -1083,6 +1083,26 @@ function renderCutoff(){
     var opt={x:[fpr[bestk]],y:[tp[bestk]],mode:'markers',name:'Youden optimal',marker:{size:16,color:'#c0392b',symbol:'star'}};
     Plotly.newPlot('coChart',[curve,chance,cur,opt],{xaxis:{title:'False positive rate',range:[0,1]},yaxis:{title:'True positive rate',range:[0,1]},margin:{t:30,b:70,l:60,r:20},legend:{orientation:'h',y:1.15,yanchor:'bottom',x:0}},{responsive:true,displayModeBar:false});
   }
+}
+// ---- basis-aware curve selector: only list configs that HAVE a curve in the active basis ----
+function activeBasisData(){
+  var m=coMode();
+  if(m==='calib')    return (typeof CALIB!=='undefined')?CALIB:{};
+  if(m==='vavg')     return (typeof FOLDAVG!=='undefined')?FOLDAVG:{};
+  if(m==='insample') return (typeof INSAMPLE!=='undefined')?INSAMPLE:{};
+  return null; // pooled: every ROC_DATA config has a curve
+}
+function populateCutoff(){
+  var sel=document.getElementById('coCurve'); if(!sel) return;
+  var data=activeBasisData();
+  var list=(typeof rocFiltered==='function'?rocFiltered():[]).slice().sort(function(a,b){return b.auc-a.auc;});
+  if(data!==null){ list=list.filter(function(r){ return data[geneKeyFor(r)]!==undefined; }); }
+  CO_LIST=list.slice(0,300);
+  sel.innerHTML=CO_LIST.map(function(r,i){ return '<option value="'+i+'">'+labelModel(r.model)+' · '+r.set+' · '+r.cohort+' · '+r.subset+' · '+r.featureset+'/'+r.datatype+' · v'+r.varcut+' · AUC '+fmt(r.auc)+'</option>'; }).join('');
+  sel.value='0';
+  var ro=document.getElementById('coReadout');
+  if(!CO_LIST.length && ro){ ro.textContent='No config has a curve in this basis for the current ROC filters (the calibrated / vertical / in-sample bases cover gene-based feature sets only: fpkm, fpkm_clinics).'; }
+  renderCutoff();
 }
 init();
 </script>
