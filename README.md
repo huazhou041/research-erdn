@@ -87,7 +87,14 @@ Completeness targets (`*_group.done`): `res` 480, `res_rfxgb` 240, `res_smoking`
 ## 3. The dashboards
 
 Main report: `htmls_20260713/auc_dashboard_20260713_fsmethods_fullVsSmoking.html`
-(full ↔ ever-smoker **toggle**; all 6 models incl. **GLM+ncMAD**). It contains:
+(full ↔ ever-smoker **toggle**; all 6 models incl. **GLM+ncMAD**).
+
+A **trimmed variant** `..._fullVsSmoking_normOnly_no3vs0.html` (built by
+`make_dashboard_fsmethods_cmp_trim.R`) drops the **fpkm datatype** (keeps
+normalized — marginally stronger on well-powered cohorts; the two agree only
+r≈0.63 per-config) and the **3vs0** low-event task from every section.
+
+The main report contains:
 - AUC overview / heatmaps / best-model / varcut / explorer, all 100×10 fold-averaged.
 - **nature_com top-MAD (GLM+ncMAD) table** after the Venn, with an own-cohort-MAD
   comparison column and CSV download.

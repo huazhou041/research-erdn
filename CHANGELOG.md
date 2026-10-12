@@ -21,6 +21,7 @@ Status key: ✅ adopted/worked · ⚠️ built but flawed · ❌ tried and rejec
 - ✅ Rebuilt the three dashboards (full / smoking / full-vs-smoking toggle) with `GLM+ncMAD` wired into the model axis + legend.
 - ✅ **nature_com top-MAD results table** after the Venn, with an own-cohort-MAD comparison column and CSV download.
 - ✅ **Per-model gene-list download** in the explorer — GLM coefficients / RF-XGB importances, extracted from all 29,159 models.
+- ✅ **Trimmed variant** `auc_dashboard_20260713_fsmethods_fullVsSmoking_normOnly_no3vs0.html` (builder `make_dashboard_fsmethods_cmp_trim.R`, patch `make_trim_variant.py`): **normalized-only** (fpkm datatype dropped) and **3vs0 removed** from every section. Rationale: for gene-based feature sets fpkm≈normalized *on average* (mean AUC 0.539 vs 0.532) but only r=0.63 per-config (~40% differ >0.05) — normalized is marginally stronger on well-powered cohorts (0.570 vs 0.557), so it is the one kept. 3vs0 dropped as a low-event winner's-curse task. 16,214→5,410 full configs. Main report left untouched.
 
 ## 4. Operating-point / optimal-cutoff panel (the main methodological iteration)
 - ⚠️ **v1 — Pooled probability-cutoff slider + Youden.** Worked, but the drawn curve sat **below the diagonal** for small-event configs while the headline AUC was high.
