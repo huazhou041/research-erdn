@@ -267,6 +267,10 @@ genelists_json <- paste(readLines("model_gene_lists_compact.json", warn = FALSE)
 tpl <- sub1(tpl, "__GENELISTS__", genelists_json)
 foldavg_json <- paste(readLines("roc_foldavg_compact.json", warn = FALSE), collapse = "")
 tpl <- sub1(tpl, "__FOLDAVG__", foldavg_json)
+insample_json <- paste(readLines("roc_insample_compact.json", warn = FALSE), collapse = "")
+tpl <- sub1(tpl, "__INSAMPLE__", insample_json)
+calib_json <- paste(readLines("roc_calib_compact.json", warn = FALSE), collapse = "")
+tpl <- sub1(tpl, "__CALIB__", calib_json)
 
 ## sanity: none of OUR known placeholder tokens left behind (a generic
 ## __[A-Z_]+__ scan false-matches tokens inside injected Plotly/data payloads)

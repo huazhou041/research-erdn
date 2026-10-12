@@ -123,6 +123,27 @@ in the operating-points table; their AUC/CI are small-sample artifacts (e.g. a n
 CV CI there reflects resampling reproducibility, **not** true uncertainty, which is
 huge with ~4 events).
 
+### Deployment recipe (calibrated — the correct flow)
+1. **Pick a well-powered, non-low-event, gene-based config** (fpkm / fpkm_clinics).
+2. In the dashboard cutoff panel, set **Basis = "Calibrated CV (deployable)"** — this
+   shows honest out-of-fold sensitivity/specificity on a *calibrated* probability axis.
+   Read the **Youden** (or your chosen) **calibrated cutoff**.
+3. **Score new patients:** `predict_new_cohort.R <config_key> <new_expr.csv> <calibrated_cutoff> <out.csv>`.
+   It loads the full-data model, fits **isotonic calibration on the config's out-of-fold
+   CV predictions** (NOT on the model's own training data), applies it to the new scores,
+   and classifies at your calibrated cutoff.
+4. **Validate on an independent cohort** before any real use.
+
+Why calibrated-CV: sensitivity/specificity come from held-out CV (honest); calibration
+only relabels the probability axis so the cutoff is a meaningful, deployable number on
+the full model's scale. The other three slider bases are diagnostic only — *pooled* (raw
+CV probability, can sag below the diagonal for small-n), *vertical-averaged* (honest
+trade-off but no single probability), *in-sample* (full model on its own data —
+optimistic, shows the deployable scale but not real performance).
+
+Reality check: even the best well-powered configs here reach only AUC ≈ 0.6, so any
+cutoff is research-grade prioritization, not a validated clinical threshold.
+
 Key deployment files: `model_operating_points_202609.csv` (thresholds + event flags),
 `predict_new_cohort.R` (scorer), `model_gene_lists_202609.csv.gz` (every model's genes).
 
