@@ -13,8 +13,13 @@ calib_roc <- function(pred_file, rds){
   ps <- d[, .(prob=mean(prob, na.rm=TRUE)), by=subj]
   ps$y <- y[as.character(ps$subj)]; ps <- ps[is.finite(ps$y) & is.finite(ps$prob)]
   np <- sum(ps$y==1); nn <- sum(ps$y==0); if(np<2||nn<2||nrow(ps)<5) return(NULL)
-  # isotonic calibration fit on the OOF scores (monotone: preserves ranking/AUC, fixes the probability axis)
-  o <- order(ps$prob); ir <- isoreg(ps$prob[o], ps$y[o]); calib <- numeric(nrow(ps)); calib[o] <- ir$yf
+  # Platt scaling: logistic calibration fit on the OOF scores. Smooth, strictly monotone sigmoid
+  # (preserves ranking/AUC, fixes the probability axis). Preferred over isotonic for small n:
+  # fewer parameters, no blocky few-step overfit. Each subject gets a distinct calibrated prob.
+  df <- as.data.frame(ps)
+  fit <- tryCatch(suppressWarnings(glm(y ~ prob, data=df, family=binomial())), error=function(e) NULL)
+  if(is.null(fit) || !fit$converged) return(NULL)
+  calib <- as.numeric(predict(fit, type="response"))
   # ROC on calibrated OOF probabilities at the calibrated-prob ladder
   tpr <- sapply(TH, function(t) sum(calib>=t & ps$y==1)/np)
   fpr <- sapply(TH, function(t) sum(calib>=t & ps$y==0)/nn)

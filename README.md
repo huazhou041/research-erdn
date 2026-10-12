@@ -129,14 +129,17 @@ huge with ~4 events).
    shows honest out-of-fold sensitivity/specificity on a *calibrated* probability axis.
    Read the **Youden** (or your chosen) **calibrated cutoff**.
 3. **Score new patients:** `predict_new_cohort.R <config_key> <new_expr.csv> <calibrated_cutoff> <out.csv>`.
-   It loads the full-data model, fits **isotonic calibration on the config's out-of-fold
-   CV predictions** (NOT on the model's own training data), applies it to the new scores,
-   and classifies at your calibrated cutoff.
+   It loads the full-data model, fits **Platt calibration (logistic regression) on the
+   config's out-of-fold CV predictions** (NOT on the model's own training data), applies
+   it to the new scores, and classifies at your calibrated cutoff.
 4. **Validate on an independent cohort** before any real use.
 
 Why calibrated-CV: sensitivity/specificity come from held-out CV (honest); calibration
-only relabels the probability axis so the cutoff is a meaningful, deployable number on
-the full model's scale. The other three slider bases are diagnostic only — *pooled* (raw
+(**Platt scaling** — a logistic fit on the OOF scores) only relabels the probability axis
+so the cutoff is a meaningful, deployable number on the full model's scale. Platt is the
+standard choice at these sample sizes (~60–150): it is a smooth, strictly monotone sigmoid
+(preserves AUC) and, unlike isotonic, does not collapse weak-signal scores into a handful
+of tied probability blocks (which produced a few-point, zig-zag ROC). The other three slider bases are diagnostic only — *pooled* (raw
 CV probability, can sag below the diagonal for small-n), *vertical-averaged* (honest
 trade-off but no single probability), *in-sample* (full model on its own data —
 optimistic, shows the deployable scale but not real performance).

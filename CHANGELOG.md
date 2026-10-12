@@ -29,13 +29,14 @@ Status key: ✅ adopted/worked · ⚠️ built but flawed · ❌ tried and rejec
 - ✅ **Vertical averaging** (each fold's TPR at fixed FPR, averaged). Honest trade-off, stays above the diagonal, area matches the per-fold-averaged AUC — **but** gives no single probability cutoff (operating point parameterised by specificity).
 - ⚠️ **Full-data in-sample basis** (whole model scored on its own training data). Added to expose the **deployable probability scale** — but it's **optimistic** (memorisation; e.g. `novel/3vs0` in-sample AUC = 1.0, specificity pinned at 1.0). RF/XGB in-sample predictions wouldn't reconstruct cleanly → **GLM-only** in this basis.
 - 🔑 **Calibration question resolved:** calibration is fit on the **out-of-fold CV predictions** (honest), NOT on the whole-set model's own predictions (that would be the in-sample memorisation trap); it is then **applied to the full-data model** at deployment.
-- ✅ **FINAL — "Calibrated CV (deployable)" basis** (default): isotonic calibration on the OOF CV predictions → honest CV sensitivity/specificity on a **meaningful probability axis** → a deployable Youden cutoff. The other three bases are kept as diagnostics.
+- ⚠️ **Calibrated-CV basis, v1 — isotonic (PAV).** Honest, but on weak signal (AUC ≈ 0.6) isotonic pooled the ~60–150 patients into only **2–3 monotone blocks** → the calibrated ROC had just 2–3 vertices (a few-point zig-zag), and the slider moved whole tied blocks at once.
+- ✅ **FINAL — Calibrated-CV basis, v2 — Platt scaling (logistic).** Switched the calibration to a logistic fit on the OOF CV predictions: smooth, strictly monotone (preserves ranking/AUC), each patient gets a **distinct** calibrated probability → a smooth, continuously-slidable ROC. Platt is the **standard choice for small n** (fewer parameters than isotonic, no blocky overfit). Honest CV sensitivity/specificity on a meaningful probability axis → a deployable Youden cutoff. The other three bases are kept as diagnostics.
 - 🔧 UI fixes: legend/x-axis overlap; readout shows **both** sensitivity and specificity explicitly.
 
 ## 5. Deployment
 - ✅ Full-data ("final") models already exist per config (the saved `.rds` is the fit on all data).
 - ✅ `model_operating_points_202609.csv`: per-config AUC, pooled Youden cutoff + sens/spec, vertical-averaged optimum, **event counts**, and a **`low_event_flag`** (recur or non-recur < 10).
-- ✅ `predict_new_cohort.R`: scores a new cohort with the full model, **fits isotonic calibration on the config's OOF predictions**, applies it, and classifies at a chosen calibrated cutoff.
+- ✅ `predict_new_cohort.R`: scores a new cohort with the full model, **fits Platt calibration (logistic) on the config's OOF predictions**, applies it, and classifies at a chosen calibrated cutoff.
 - ✅ README **Deployment recipe** box.
 
 ### ✅ Final adopted deployment flow
