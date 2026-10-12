@@ -1,0 +1,52 @@
+# ============================================================
+# NEVER COMMIT: patient data / PHI, large binaries, derived results
+# This repo is CODE-ONLY. Data stays on the cluster.
+# ============================================================
+
+# --- patient data / PHI ---
+data/
+raw_data/
+provenance_inputs/
+nature_com/
+*.rds
+*.RDS
+
+# --- per-patient predictions & all results (may contain subject IDs) ---
+res/
+res_rfxgb/
+res_smoking/
+res_rfxgb_smoking/
+res_*/
+*_pred_prob.csv
+*_cvSummary.csv
+
+# --- aggregated / derived data tables (regenerable; exclude to be safe) ---
+*.csv
+*.csv.gz
+*.json
+
+# --- built reports (large; embed aggregate data) ---
+htmls/
+htmls_20260713/
+*.html
+
+# --- logs, markers, scratch ---
+logs*/
+*.log
+*.marker
+*.done
+*.bak_*
+__pycache__/
+*.pyc
+.DS_Store
+Archive.zip
+agg_*.log
+*_%j.log
+
+# ============================================================
+# Whitelist: code templates that live under ignored html/csv globs
+# (force-added explicitly in the repo; see README)
+# ============================================================
+!codes_20260713/dashboard_template_fsmethods.html
+!codes_20260713/dashboard_template_fsmethods_cmp.html
+!codes_20260713/plotly-2.32.0.min.js

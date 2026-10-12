@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ERDN Recurrence Models - 5-Model Comparison Dashboard (GLM x3 prefilters + RF + XGB)</title>
+<script>
+/* Plotly.js v2.32.0, inlined for full offline use -- no CDN dependency. Loads
+   synchronously here in <head>, so window.Plotly is already defined by the
+   time init()'s renderAll() runs at the bottom of <body> -- plotReady() (see
+   below) passes on the first call, no async/onload race to handle. */
+__PLOTLY_JS__
+</script>
+<style>
+:root {
+  --blue:#245f9d; --ink:#172033; --muted:#667085; --border:#d6dce5; --bg:#f7f9fc;
+  --panel:#ffffff; --prev:#fff3e7; --cur:#eaf6ee; --stable:#e8f2ff; --warn:#fff4cc;
+}
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--bg); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+header { background:#17395f; color:#fff; padding:28px 32px 22px; }
+header h1 { margin:0 0 7px; font-size:23px; letter-spacing:0; }
+header p { margin:0; opacity:.9; font-size:13px; }
+nav.toc { position:fixed; left:0; top:0; bottom:0; width:220px; z-index:50; background:#fff; border-right:1px solid var(--border); padding:18px 16px; display:flex; flex-direction:column; gap:10px; font-size:13px; overflow:auto; }
+nav.toc a { color:var(--blue); text-decoration:none; font-weight:650; padding:6px 8px; border-radius:4px; }
+nav.toc a:hover { background:#eef5ff; }
+header { margin-left:220px; }
+main { max-width:1320px; margin:0 auto 0 220px; padding:16px 32px 64px; }
+section { margin-top:34px; }
+h2 { font-size:18px; margin:0 0 5px; padding-bottom:7px; border-bottom:2px solid var(--blue); }
+.sub { color:var(--muted); font-size:12.5px; margin:4px 0 14px; }
+.banner { border:1px solid #ecc94b; background:var(--warn); padding:10px 12px; border-radius:6px; font-size:13px; margin:14px 0 6px; }
+.globalbar { display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+.toggle { display:flex; align-items:center; gap:7px; background:#fff; color:var(--ink); border:1px solid rgba(255,255,255,.45); padding:7px 10px; border-radius:6px; font-size:13px; }
+.modepill,.pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11.5px; font-weight:700; }
+.modepill { background:var(--stable); color:#164a7a; }
+.modepill.warn { background:var(--warn); color:#7a4b00; }
+.cards { display:grid; grid-template-columns:repeat(5,minmax(160px,1fr)); gap:10px; margin-top:14px; }
+.card { background:#fff; border:1px solid var(--border); border-radius:6px; padding:12px; min-height:78px; }
+.card .k { color:var(--muted); font-size:12px; }
+.card .v { font-size:22px; font-weight:750; margin-top:4px; }
+.card .d { color:var(--muted); font-size:11.5px; margin-top:3px; }
+.controls { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; align-items:end; }
+.controls label { font-size:12px; color:var(--muted); display:flex; flex-direction:column; gap:3px; }
+select,input[type=text] { font-size:12.5px; padding:5px 7px; border:1px solid var(--border); border-radius:4px; background:#fff; }
+button,.btn { font-size:12.5px; padding:6px 10px; border:1px solid var(--blue); background:#fff; color:var(--blue); border-radius:4px; cursor:pointer; }
+button.active,.btn.active,button:hover { background:var(--blue); color:#fff; }
+.tablewrap { max-height:570px; overflow:auto; border:1px solid var(--border); border-radius:6px; background:#fff; }
+table { border-collapse:collapse; width:100%; font-size:12.5px; }
+th,td { border:1px solid var(--border); padding:5px 8px; text-align:left; white-space:nowrap; }
+th { background:#eef2f7; cursor:pointer; user-select:none; position:sticky; top:0; z-index:1; }
+th.sortasc::after { content:" ▲"; } th.sortdesc::after { content:" ▼"; }
+tbody tr:nth-child(even) { background:#fbfcfe; }
+tbody tr:hover { background:#eef5ff; }
+.grp-id { background:#edf5ff !important; } .grp-prev { background:var(--prev) !important; } .grp-current { background:var(--cur) !important; } .grp-nc { background:#dff2e6 !important; }
+.win { background:#c6efce; color:#006100; } .warncell { color:#9a3412; font-weight:700; }
+.chart { width:100%; height:420px; background:#fff; border:1px solid var(--border); border-radius:6px; }
+.charts-row { display:flex; gap:16px; flex-wrap:wrap; }
+.charts-row > div { flex:1; min-width:390px; }
+.pager { display:flex; gap:8px; align-items:center; margin-top:8px; font-size:12.5px; }
+footer { text-align:center; color:var(--muted); font-size:11.5px; padding:24px; }
+@media (max-width:900px) { nav.toc { position:static; width:auto; flex-direction:row; border-right:0; border-bottom:1px solid var(--border); } header,main { margin-left:0; } main,header,nav.toc { padding-left:18px; padding-right:18px; } .cards { grid-template-columns:repeat(2,minmax(150px,1fr)); } .charts-row > div { min-width:100%; } }
+@media (max-width:1200px) and (min-width:901px) { .cards { grid-template-columns:repeat(3,minmax(150px,1fr)); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>ERDN Recurrence Models - Gene Prefilter Method Dashboard</h1>
+  <p id="hdrMeta"></p>
+  <div class="globalbar">
+    <label class="toggle"><input type="checkbox" id="includeXgb" checked> Show GLM+MAD(no sex/MT) / RF / XGB results</label>
+    <span id="modeText" class="modepill"></span>
+  </div>
+</header>
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#cohorts">Cohorts</a>
+  <a href="#headline">Model comparison</a>
+  <a href="#genecorr">Gene correlation</a>
+  <a href="#corrplots">Sample correlation</a>
+  <a href="#heatmap">Heatmap</a>
+  <a href="#bestmodel">Best model</a>
+  <a href="#families">Condition summary</a>
+  <a href="#varcut">Varcut</a>
+  <a href="#roc">ROC curves</a>
+  <a href="#genevenn">Gene overlap</a>
+  <a href="#explorer">Explorer</a>
+</nav>
+<main>
+<section id="overview">
+  <h2>Overview</h2>
+  <div class="banner">5-way model comparison, all under the same fixed pROC direction="&lt;": three GLM gene-prefilter methods from this run -- <b>GLM+MAD</b> (original unsupervised top-variance gene selection), <b>GLM+COR</b> (supervised: rank genes by |correlation| with the recurrence outcome, computed fold-locally -- no leakage), <b>GLM+MAD(no sex/MT)</b> (mad, but with sex-chromosome and mitochondrial genes excluded from the candidate pool first) -- plus <b>RF+MAD</b> and <b>XGB+MAD</b>, pulled in from the earlier erdn_202607 pipeline (same fixed-direction methodology, mad-only feature selection there). GLM+MAD and GLM+COR are shown by default; the other three sit behind the toggle -- purely a display filter, not a reliability flag, all five are equally valid. ROC curves are pooled-prediction curve shapes, always labelled/ranked by this dashboard's official per-fold AUC (see ROC tab for details).</div>
+  <div class="banner" style="background:#eaf6ee;border-color:#2e8b57">nature_com reference (original manuscript-era model, NOT part of the prev/current grid above): matched_rm5years cohort, normalized/fpkm, top-200-style MAD genes, GLM, <b>Normal tissue only</b>, all 3 subsets x full 5-varcut series (15 configs). Best AUC per subset (v200 in all 3 cases): 12vs0 = <b>0.83 (0.74-0.92)</b>, 123vs0 = <b>0.69 (0.59-0.78)</b> -- both the standard 100-boot fold-averaged fixed-direction metric, matching Section 2/11.13 exactly -- and 3vs0 = <b>0.70 (0.61-0.81)</b>, which is the <i>published manuscript figure's</i> value: a single bootstrap replicate (bootid=1) pooled across its 10 folds, not the 100-boot average (which is flat at chance, ~0.47-0.49, for this task under the current regenerated prediction file -- see ROC/hover for detail). Shown in the Explorer/Condition-summary/Varcut/ROC/Heatmap/Best-model tabs (set = "nature_com"); not shown in the Headline tab, which is structurally a prev-vs-current bar comparison only.</div>
+  <div class="cards">
+    <div class="card"><div class="k">Active configurations</div><div class="v" id="kConfigs"></div><div class="d" id="kConfigDetail"></div></div>
+    <div class="card"><div class="k">Best current AUC</div><div class="v" id="kBestCurrent"></div><div class="d" id="kBestCurrentDetail"></div></div>
+    <div class="card"><div class="k">Best prev AUC</div><div class="v" id="kBestPrev"></div><div class="d" id="kBestPrevDetail"></div></div>
+    <div class="card"><div class="k">Best current-prev delta</div><div class="v" id="kBestDelta"></div><div class="d" id="kBestDeltaDetail"></div></div>
+    <div class="card" style="background:#eaf6ee"><div class="k">Best nature_com AUC</div><div class="v" id="kBestNatureCom"></div><div class="d" id="kBestNatureComDetail"></div></div>
+  </div>
+</section>
+<section id="cohorts">
+  <h2>Cohorts</h2>
+  <p class="sub">Sample composition for each cohort; task-specific counts are shown in the best-model table.</p>
+  <div class="tablewrap"><table id="cohortsTable"></table></div>
+</section>
+<section id="headline">
+  <h2>Model comparison - prev vs current vs nature_com</h2>
+  <p class="sub">Best or median AUC by model across all active configurations. nature_com (green) only has GLM+MAD-style data, so its bar is absent for the other 4 models.</p>
+  <div class="controls"><button class="btn active" data-metric="best">Best AUC</button><button class="btn" data-metric="median">Median AUC</button></div>
+  <div id="headlineChart" class="chart"></div>
+</section>
+<section id="genecorr">
+  <h2>Gene correlation explorer</h2>
+  <p class="sub">Scope: <b>current</b> RNA-seq reprocessing only (not part of the prev/current comparisons above). For each of the 6 cohorts x 3 subsets (18 combos), genes were ranked by |Pearson r| with the binary recurrence outcome -- the same statistic as the GLM+COR fs_method (cor(gene, recurrence), pairwise-complete) -- and the union of each combo's own top-100 genes forms the 554-gene master list searchable below. Pick a cohort and a gene: the panels are boxplots of that gene's expression split by recurrence status (median line, box = IQR, whiskers, all points overlaid with jitter, dashed marker = mean) across all 3 subsets for the chosen cohort, with a Wilcoxon rank-sum (Mann-Whitney) p-value for the group difference. When the gene is in that specific combo's own top-100, its correlation rank/r is also shown; otherwise it's shown anyway (for cross-subset comparison) with "not top-100 here".</p>
+  <div class="controls">
+    <label>Cohort <select id="gcCohort"></select></label>
+    <label>Search gene <input type="text" id="gcGeneSearch" placeholder="e.g. TP53"></label>
+    <label>Gene <select id="gcGene"></select></label>
+    <label>&nbsp;<span id="gcGeneCount" style="color:var(--muted);font-size:12px"></span></label>
+  </div>
+  <div class="charts-row" id="gcChartsRow"></div>
+</section>
+<section id="corrplots">
+  <h2>Sample correlation heatmaps</h2>
+  <p class="sub">Patient x patient expression-correlation heatmaps from three direct comparisons (static images, not generated from the tables above), from erdn_20260709/correlation/: <b>prev vs. nature_com</b>, <b>current vs. nature_com</b> (both Normal tissue), and <b>prev vs. current</b> (direct, same 168 patients, no nature_com intermediary). "Diagonal" crops to the same-patient band; "Raw" shows the full sample x sample matrix.</p>
+  <div class="controls">
+    <label>Source <select id="cpSource">
+      <option value="prev_vs_naturecom">prev vs. nature_com</option>
+      <option value="current_vs_naturecom">current vs. nature_com</option>
+      <option value="prev_vs_current">prev vs. current</option>
+    </select></label>
+    <label>Gene set <select id="cpGeneset"></select></label>
+    <label>Method <select id="cpMethod"><option value="pearson">Pearson</option><option value="spear">Spearman</option></select></label>
+    <label>View <select id="cpDiagonal"><option value="0">Raw (full matrix)</option><option value="1">Diagonal (same-patient band)</option></select></label>
+  </div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:14px;text-align:center">
+    <img id="cpImage" style="max-width:50%;height:auto" alt="correlation heatmap">
+    <p class="sub" id="cpCaption" style="margin-top:8px"></p>
+  </div>
+</section>
+<section id="heatmap">
+  <h2>Cohort x subset heatmap</h2>
+  <p class="sub">Best achievable AUC for each cohort and recurrence task, using the active model set. Top row (matched_rm5years) is the nature_com reference -- identical in both panels, not part of the prev/current grid -- covering all 3 subsets: 12vs0=0.83, 123vs0=0.69, 3vs0=0.70 (the 3vs0 value is the published figure's single-bootid-replicate AUC, not the 100-boot average used elsewhere -- see hover for detail).</p>
+  <div class="charts-row"><div id="heatmapPrev" class="chart"></div><div id="heatmapCurrent" class="chart"></div></div>
+</section>
+<section id="bestmodel">
+  <h2>Best model per task</h2>
+  <p class="sub">Best model/datatype/varcut for every cohort, subset, and feature set. The table recomputes when the model filter is toggled. nature_com (green columns) only has data at cohort=matched_rm5years, featureset=fpkm, across all 3 subsets -- blank elsewhere. Its 3vs0 value is the published figure's single-bootid AUC (see banner above), not this dashboard's usual 100-boot metric.</p>
+  <div class="controls">
+    <label>Cohort <select id="bmCohort"><option value="">All</option></select></label>
+    <label>Subset <select id="bmSubset"><option value="">All</option></select></label>
+    <label>Feature set <select id="bmFeatureset"><option value="">All</option></select></label>
+    <label>Search <input type="text" id="bmSearch" placeholder="filter rows"></label>
+    <button id="bmReset">Reset</button>
+  </div>
+  <div class="tablewrap"><table id="bestTable"></table></div>
+  <div id="deltaChart" class="chart" style="margin-top:12px"></div>
+</section>
+<section id="families">
+  <h2>Condition summary</h2>
+  <p class="sub">Max and median AUC by cohort, feature set, datatype, and model. This is a compact way to compare clinics-only, module20, expression-only, and combined inputs.</p>
+  <div class="controls">
+    <label>Set <select id="famSet"><option value="">All</option></select></label>
+    <label>Cohort <select id="famCohort"><option value="">All</option></select></label>
+    <label>Feature set <select id="famFeatureset"><option value="">All</option></select></label>
+    <label>Model <select id="famModel"><option value="">All</option></select></label>
+    <label>Search <input type="text" id="famSearch" placeholder="filter rows"></label>
+  </div>
+  <div class="tablewrap"><table id="familyTable"></table></div>
+</section>
+<section id="varcut">
+  <h2>Varcut sensitivity</h2>
+  <p class="sub">Mean AUC with 95% normal CI band vs top-variance genes retained.</p>
+  <div class="controls">
+    <label>Set <select id="vcSet"><option value="both">prev vs current</option></select></label>
+    <label>Cohort <select id="vcCohort"></select></label>
+    <label>Subset <select id="vcSubset"></select></label>
+    <label>Feature set <select id="vcFeatureset"></select></label>
+    <label>Datatype <select id="vcDatatype"></select></label>
+    <label>Model <select id="vcModel"><option value="">All active</option></select></label>
+  </div>
+  <div id="varcutChart" class="chart"></div>
+</section>
+<section id="roc">
+  <h2>ROC curves</h2>
+  <p class="sub">Legends/ranking always use the same per-fold AUC shown in the other tabs -- never a separately-recomputed curve statistic, which can diverge sharply for tiny/imbalanced cohorts and would otherwise rank degenerate configs as "best". A curve drawn mirrored (noted in the legend as "curve shown flipped") means its raw plotted curve was below chance; only the drawing is mirrored, the AUC label never changes. Broad filters cap display and are stratified across subset/datatype/featureset so "All" shows real variety, not just the extremes.</p>
+  <div class="controls">
+    <label>Set <select id="rocSet"><option value="">All</option></select></label>
+    <label>Cohort <select id="rocCohort"><option value="">All</option></select></label>
+    <label>Datatype <select id="rocDatatype"><option value="">All</option></select></label>
+    <label>Feature set <select id="rocFeatureset"><option value="">All</option></select></label>
+    <label>Subset <select id="rocSubset"><option value="">All</option></select></label>
+    <label>Model <select id="rocModel"><option value="">All</option></select></label>
+    <label>Varcut <select id="rocVarcut"><option value="">All</option></select></label>
+    <label>Search <input type="text" id="rocSearch" placeholder="filter curves"></label>
+    <button id="rocReset">Reset</button>
+  </div>
+  <p class="sub" id="rocInfo"></p>
+  <div id="rocChart" class="chart"></div>
+</section>
+<section id="genevenn">
+  <h2>Gene overlap: nature_com vs prev vs current (top-MAD genes)</h2>
+  <p class="sub">How much do the top-variance (MAD) genes agree across the three RNA-seq sources, at different thresholds and cohorts? nature_com's <b>patient set is fixed</b> (121 of 123 found) -- the "matched" (Normal+Tumor paired, not rm5years-restricted) cohort's <code>123vs0</code> subset, the exact patient count from the original training data; not the same as the matched_rm5years cohort used for the headline AUC. prev/current subset to the chosen cohort's own patients (wholeset/stage1/intersection, matching the rest of this dashboard). The "_coding" cohort variants restrict all 3 sources to protein-coding genes only; the plain variants include non-coding genes too -- applied consistently across nature_com/prev/current for a fair comparison at each cohort choice. Not filtered by recurrence outcome (this is MAD, the unsupervised ranking critiqued in the Overview banner, not GLM+COR).</p>
+  <div class="controls">
+    <label>Cohort (prev/current subset; nature_com's 123-patient set stays fixed) <select id="vnCohort">
+      <option value="wholeset">wholeset</option><option value="wholeset_coding">wholeset_coding</option>
+      <option value="stage1">stage1</option><option value="stage1_coding">stage1_coding</option>
+      <option value="intersection">intersection</option><option value="intersection_coding">intersection_coding</option>
+    </select></label>
+    <label>Top-N MAD genes <select id="vnVarcut">
+      <option value="50">50</option><option value="100">100</option><option value="200" selected>200</option>
+      <option value="500">500</option><option value="1000">1000</option>
+    </select></label>
+    <span id="vnSummary" class="sub" style="margin:0"></span>
+  </div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center">
+    <svg viewBox="0 0 500 420" style="max-width:520px;width:100%;height:auto">
+      <circle cx="190" cy="180" r="120" fill="#e74c3c" fill-opacity="0.35" stroke="#c0392b" stroke-width="1.5"/>
+      <circle cx="310" cy="180" r="120" fill="#2e8b57" fill-opacity="0.35" stroke="#1e6b3f" stroke-width="1.5"/>
+      <circle cx="250" cy="290" r="120" fill="#245f9d" fill-opacity="0.35" stroke="#173f6b" stroke-width="1.5"/>
+      <text x="110" y="90" font-size="14" font-weight="700" fill="#c0392b">nature_com</text>
+      <text x="330" y="90" font-size="14" font-weight="700" fill="#1e6b3f" text-anchor="end">prev</text>
+      <text x="250" y="400" font-size="14" font-weight="700" fill="#173f6b" text-anchor="middle">current</text>
+      <text id="vnA" x="120" y="130" font-size="16" text-anchor="middle"></text>
+      <text id="vnB" x="380" y="130" font-size="16" text-anchor="middle"></text>
+      <text id="vnC" x="250" y="380" font-size="16" text-anchor="middle"></text>
+      <text id="vnAB" x="250" y="115" font-size="16" text-anchor="middle"></text>
+      <text id="vnAC" x="155" y="280" font-size="16" text-anchor="middle"></text>
+      <text id="vnBC" x="345" y="280" font-size="16" text-anchor="middle"></text>
+      <text id="vnABC" x="250" y="220" font-size="17" font-weight="700" text-anchor="middle"></text>
+    </svg>
+  </div>
+</section>
+<section id="explorer">
+  <h2>Full data explorer</h2>
+  <p class="sub">Active configurations only by default. Sorting is applied to all filtered rows before pagination.</p>
+  <div class="controls">
+    <label>Set <select id="fSet"><option value="">All</option></select></label>
+    <label>Cohort <select id="fCohort"><option value="">All</option></select></label>
+    <label>Datatype <select id="fDatatype"><option value="">All</option></select></label>
+    <label>Feature set <select id="fFeatureset"><option value="">All</option></select></label>
+    <label>Subset <select id="fSubset"><option value="">All</option></select></label>
+    <label>Model <select id="fModel"><option value="">All</option></select></label>
+    <label>Varcut <select id="fVarcut"><option value="">All</option></select></label>
+    <label>Search <input type="text" id="fSearch" placeholder="filter rows"></label>
+    <button id="fReset">Reset</button><button id="fDownload">Download CSV</button>
+  </div>
+  <div class="tablewrap"><table id="explorerTable"></table></div>
+  <div class="pager"><button class="btn" id="fPrev">&laquo; Prev</button><span id="fPageInfo"></span><button class="btn" id="fNext">Next &raquo;</button></div>
+</section>
+</main>
+<footer>Generated from results_fsmethod_comparison.csv (rnaseq_20260709, GLM) + rf_xgb_auc_202607.csv (erdn_202607, RF/XGB) + nature_com_normal_varcut_series_auc.csv + gene_corr_{master,membership,scatter}.csv (current RNA-seq only). GLM+MAD and GLM+COR are included by default; GLM+MAD(no sex/MT), RF+MAD, and XGB+MAD are optional.</footer>
+<script>
+const LONG_COLS = ["set","cohort","datatype","featureset","subset","model","varcut","mean","sd","n","lo","hi"];
+const LONG_DATA = __LONG_DATA__;
+const COHORTS_TAB = __COHORTS_TAB__;
+const HEADLINE_STABLE = __HEADLINE_STABLE__;
+const HEADLINE_ALL = __HEADLINE_ALL__;
+const BEST_STABLE = __BEST_STABLE__;
+const BEST_ALL = __BEST_ALL__;
+const FAMILY_STABLE = __FAMILY_STABLE__;
+const FAMILY_ALL = __FAMILY_ALL__;
+const ROC_DATA = __ROC_DATA__;
+const META = __META__;
+const GENE_MASTER = __GENE_MASTER__;
+const GENE_MEMBERSHIP = __GENE_MEMBERSHIP__;
+const GENE_SCATTER = __GENE_SCATTER__;
+const CORR_PLOTS = __CORR_PLOTS__;
+const VENN_DATA = __VENN_DATA__;
+const LONG = LONG_DATA.map(r => {
+  const o = {}; LONG_COLS.forEach((c,i) => o[c] = r[i]);
+  o.ci = (o.lo != null && o.hi != null) ? `${o.mean.toFixed(3)} (${o.lo.toFixed(2)}-${o.hi.toFixed(2)})` : `${o.mean.toFixed(3)} (point est., no CI)`;
+  return o;
+});
+window.DASHBOARD_INLINE_STARTED = true;
+const SETS = ['prev','current'];
+const COH_LV = META.cohorts, SUB_LV = META.subsets, DM_LV = META.datatypes, FS_LV = META.featuresets, VC_LV = META.varcuts;
+let headlineMetric = 'best';
+let explorerSortCol = 'mean', explorerSortDir = -1, explorerPage = 0;
+const cohortsState = {sortCol:'cohort', sortDir:1};
+const bestState = {sortCol:'cohort', sortDir:1};
+const familyState = {sortCol:'max_auc', sortDir:-1};
+
+function includeXgb() { return document.getElementById('includeXgb').checked; }
+function activeModels() { return includeXgb() ? META.models : META.stable_models; }
+function activeLong() { const models = activeModels(); return LONG.filter(r => models.includes(r.model)); }
+function activeBest() { return includeXgb() ? BEST_ALL : BEST_STABLE; }
+function activeHeadline() { return includeXgb() ? HEADLINE_ALL : HEADLINE_STABLE; }
+function activeFamily() { return includeXgb() ? FAMILY_ALL : FAMILY_STABLE; }
+function fmt(x, d=3) { return x == null || Number.isNaN(x) ? '' : Number(x).toFixed(d); }
+function plotReady(id) {
+  if (window.Plotly && typeof Plotly.newPlot === 'function') return true;
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = '<div style="padding:18px;color:#667085;font-size:13px">Chart library is still loading. Tables and KPIs are available.</div>';
+  return false;
+}
+function labelModel(m) { return ({glm_mad:'GLM+MAD', glm_cor:'GLM+COR', glm_mad_nosexmt:'GLM+MAD (no sex/MT)', rf_mad:'RF+MAD', xgb_mad:'XGB+MAD', glm_natcommad:'GLM+ncMAD'})[m] || m; }
+function esc(x) { return String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fillSelect(id, opts, keep=false) {
+  const sel = typeof id === 'string' ? document.getElementById(id) : id;
+  const old = sel.value;
+  if (!keep) sel.innerHTML = '';
+  opts.forEach(o => { const e = document.createElement('option'); e.value = o; e.textContent = o; sel.appendChild(e); });
+  if ([...sel.options].some(o => o.value === old)) sel.value = old;
+}
+function fillAfterAll(id, opts) { fillSelect(document.getElementById(id), opts, true); }
+function compareVal(a,b,key,dir) {
+  let x = a[key], y = b[key];
+  const xn = x == null || x === '' || Number.isNaN(x), yn = y == null || y === '' || Number.isNaN(y);
+  if (xn && yn) return 0; if (xn) return 1; if (yn) return -1;
+  if (typeof x === 'number' && typeof y === 'number') return dir * (x - y);
+  return dir * String(x).localeCompare(String(y), undefined, {numeric:true});
+}
+function renderTable(table, rows, cols, rowFn, state, rerender) {
+  const data = state.sortCol ? rows.slice().sort((a,b) => compareVal(a,b,state.sortCol,state.sortDir)) : rows.slice();
+  table.innerHTML = '<thead><tr>' + cols.map(c => `<th data-key="${c.key}" class="${c.key===state.sortCol ? (state.sortDir>0?'sortasc':'sortdesc') : ''} ${c.cls||''}">${c.label}</th>`).join('') + '</tr></thead><tbody>' + data.map(rowFn).join('') + '</tbody>';
+  table.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
+    const k = th.dataset.key;
+    if (state.sortCol === k) state.sortDir *= -1; else { state.sortCol = k; state.sortDir = 1; }
+    rerender();
+  }));
+  return data;
+}
+function bestConfig(rows, setName) {
+  const subset = rows.filter(r => r.set === setName);
+  return subset.reduce((a,b) => !a || b.mean > a.mean ? b : a, null);
+}
+function renderOverview() {
+  const rows = activeLong();
+  const bc = bestConfig(rows, 'current'), bp = bestConfig(rows, 'prev'), bnc = bestConfig(rows, 'nature_com');
+  const bestRows = activeBest();
+  // exclude nature_com's matched_rm5years row(s) -- delta_current_minus_prev is null there
+  // (no real prev/current pair exists for that cohort), and null coerces to 0 in a numeric
+  // comparison, which would otherwise let it masquerade as a real "best delta" result.
+  const bd = bestRows.filter(r => r.delta_current_minus_prev !== null).reduce((a,b) => !a || b.delta_current_minus_prev > a.delta_current_minus_prev ? b : a, null);
+  document.getElementById('hdrMeta').textContent = `Generated ${META.generated} - source: ${META.source} - ${META.n_configs} configs (${META.stable_configs} mad/cor, ${META.provisional_xgb_configs} mad_nosexmt).`;
+  const mode = document.getElementById('modeText');
+  mode.textContent = includeXgb() ? 'All methods: mad + cor + mad_nosexmt' : 'mad + cor only';
+  mode.className = includeXgb() ? 'modepill' : 'modepill warn';
+  document.getElementById('kConfigs').textContent = rows.length.toLocaleString();
+  document.getElementById('kConfigDetail').textContent = includeXgb() ? 'includes mad_nosexmt' : 'mad_nosexmt hidden';
+  document.getElementById('kBestCurrent').textContent = fmt(bc.mean);
+  document.getElementById('kBestCurrentDetail').textContent = `${bc.cohort} / ${bc.subset} / ${bc.featureset} / ${labelModel(bc.model)}`;
+  document.getElementById('kBestPrev').textContent = fmt(bp.mean);
+  document.getElementById('kBestPrevDetail').textContent = `${bp.cohort} / ${bp.subset} / ${bp.featureset} / ${labelModel(bp.model)}`;
+  document.getElementById('kBestDelta').textContent = (bd.delta_current_minus_prev >= 0 ? '+' : '') + fmt(bd.delta_current_minus_prev);
+  document.getElementById('kBestDeltaDetail').textContent = `${bd.cohort} / ${bd.subset} / ${bd.featureset}`;
+  if (bnc) {
+    document.getElementById('kBestNatureCom').textContent = fmt(bnc.mean);
+    document.getElementById('kBestNatureComDetail').textContent = `${bnc.cohort} / ${bnc.subset} / ${bnc.featureset} / v${bnc.varcut}`;
+  } else {
+    document.getElementById('kBestNatureCom').textContent = '-';
+    document.getElementById('kBestNatureComDetail').textContent = 'no data active';
+  }
+}
+function renderCohorts() {
+  const cols = [{key:'cohort',label:'Cohort'},{key:'n_total',label:'N total'},{key:'n_pos',label:'N recur'},{key:'n_neg',label:'N non-recur'},{key:'description',label:'Description'}];
+  renderTable(document.getElementById('cohortsTable'), COHORTS_TAB, cols, r => `<tr><td>${r.cohort}</td><td>${r.n_total}</td><td>${r.n_pos}</td><td>${r.n_neg}</td><td style="white-space:normal;min-width:520px">${esc(r.description)}</td></tr>`, cohortsState, renderCohorts);
+}
+function renderHeadline() {
+  const rows = activeHeadline(), models = activeModels();
+  const key = headlineMetric === 'best' ? 'mean_best' : 'mean_median';
+  // nature_com only ever has model="mad" data, so its bars are null/absent for
+  // cor and mad_nosexmt -- Plotly simply leaves those x-categories empty for
+  // that trace, which is the correct, honest representation (no data there).
+  const traces = SETS.concat(['nature_com']).map(s => {
+    const y = models.map(m => (rows.find(h => h.model === m && h.set === s) || {})[key] ?? null);
+    const trace = {x:models.map(labelModel), y, name:s, type:'bar', text:y.map(v=>v==null?'':fmt(v)), textposition:'auto'};
+    if (s === 'nature_com') trace.marker = {color:'#2e8b57'};  // set the key only when needed -- Plotly chokes on marker:undefined
+    return trace;
+  });
+  if (!plotReady('headlineChart')) return;
+  Plotly.newPlot('headlineChart', traces, {barmode:'group', yaxis:{title:'AUC',range:[0,1]}, margin:{t:20}, legend:{orientation:'h',y:-0.15}}, {responsive:true,displayModeBar:false});
+}
+function renderHeatmaps() {
+  function grid(setName) {
+    const rows = activeLong(), z=[], hover=[];
+    COH_LV.forEach(coh => {
+      // matched_rm5years is nature_com-only (not part of the prev/current grid) --
+      // pull that one row from set="nature_com" regardless of which panel this is,
+      // so both Prev and Current panels show the same nature_com reference row on top.
+      const rowSet = coh === 'matched_rm5years' ? 'nature_com' : setName;
+      const zr=[], hr=[];
+      SUB_LV.forEach(sub => {
+        const cand = rows.filter(r => r.set===rowSet && r.cohort===coh && r.subset===sub);
+        const best = cand.reduce((a,b) => !a || b.mean > a.mean ? b : a, null);
+        zr.push(best ? best.mean : null);
+        const tag = rowSet === 'nature_com' ? ' [nature_com ref]' : '';
+        hr.push(best ? `${coh} / ${sub}${tag}<br>AUC=${best.ci}<br>model=${labelModel(best.model)}, feature=${best.featureset}<br>datatype=${best.datatype}, varcut=${best.varcut}, n=${best.n}` : 'no data');
+      });
+      z.push(zr); hover.push(hr);
+    });
+    return {z,hover};
+  }
+  [['heatmapPrev','prev','Prev RNA-seq'], ['heatmapCurrent','current','Current RNA-seq']].forEach(([id,setName,title]) => {
+    const g = grid(setName);
+    if (!plotReady(id)) return;
+    Plotly.newPlot(id, [{z:g.z,x:SUB_LV,y:COH_LV,type:'heatmap',colorscale:'YlGnBu',zmin:0.4,zmax:1,text:g.hover,hoverinfo:'text',texttemplate:'%{z:.2f}',textfont:{size:11}}], {title:{text:title,font:{size:14}},margin:{t:40,l:130}}, {responsive:true,displayModeBar:false});
+  });
+}
+function bestFiltered() {
+  const coh = document.getElementById('bmCohort').value, sub = document.getElementById('bmSubset').value, fs = document.getElementById('bmFeatureset').value, q = document.getElementById('bmSearch').value.toLowerCase();
+  return activeBest().filter(r => (!coh || r.cohort===coh) && (!sub || r.subset===sub) && (!fs || r.featureset===fs) && (!q || JSON.stringify(r).toLowerCase().includes(q)));
+}
+function renderBest() {
+  const cols = [
+    {key:'cohort',label:'Cohort',cls:'grp-id'},{key:'subset',label:'Subset',cls:'grp-id'},{key:'featureset',label:'Feature set',cls:'grp-id'},{key:'n_total',label:'N',cls:'grp-id'},{key:'n_recur',label:'N recur',cls:'grp-id'},{key:'n_nonrecur',label:'N non-recur',cls:'grp-id'},
+    {key:'prev_auc',label:'Prev AUC',cls:'grp-prev'},{key:'prev_model',label:'Model',cls:'grp-prev'},{key:'prev_datatype',label:'Datatype',cls:'grp-prev'},{key:'prev_nfeat',label:'#Feat',cls:'grp-prev'},{key:'prev_auc_ci',label:'AUC CI',cls:'grp-prev'},
+    {key:'current_auc',label:'Current AUC',cls:'grp-current'},{key:'current_model',label:'Model',cls:'grp-current'},{key:'current_datatype',label:'Datatype',cls:'grp-current'},{key:'current_nfeat',label:'#Feat',cls:'grp-current'},{key:'current_auc_ci',label:'AUC CI',cls:'grp-current'},
+    {key:'nature_com_auc',label:'nature_com AUC',cls:'grp-nc'},{key:'nature_com_varcut',label:'Varcut',cls:'grp-nc'},{key:'nature_com_auc_ci',label:'AUC CI',cls:'grp-nc'},
+    {key:'delta_current_minus_prev',label:'Delta (cur-prev)'}
+  ];
+  const row = r => {
+    const pw = r.prev_auc > r.current_auc, cw = r.current_auc > r.prev_auc;
+    return `<tr><td class="grp-id">${r.cohort}</td><td class="grp-id">${r.subset}</td><td class="grp-id">${r.featureset}</td><td class="grp-id">${r.n_total}</td><td class="grp-id">${r.n_recur}</td><td class="grp-id">${r.n_nonrecur}</td>
+    <td class="grp-prev">${pw?'<span class="pill win">':''}${fmt(r.prev_auc)}${pw?'</span>':''}</td><td class="grp-prev">${labelModel(r.prev_model)}</td><td class="grp-prev">${r.prev_datatype}</td><td class="grp-prev">${r.prev_nfeat}</td><td class="grp-prev">${r.prev_auc_ci}</td>
+    <td class="grp-current">${cw?'<span class="pill win">':''}${fmt(r.current_auc)}${cw?'</span>':''}</td><td class="grp-current">${labelModel(r.current_model)}</td><td class="grp-current">${r.current_datatype}</td><td class="grp-current">${r.current_nfeat}</td><td class="grp-current">${r.current_auc_ci}</td>
+    <td class="grp-nc">${fmt(r.nature_com_auc)}</td><td class="grp-nc">${r.nature_com_varcut ?? ''}</td><td class="grp-nc">${r.nature_com_auc_ci ?? ''}</td>
+    <td>${fmt(r.delta_current_minus_prev)}</td></tr>`;
+  };
+  renderTable(document.getElementById('bestTable'), bestFiltered(), cols, row, bestState, renderBest);
+  renderDeltaChart();
+}
+function renderDeltaChart() {
+  // exclude nature_com's matched_rm5years row(s) -- not a real prev/current pair, so
+  // delta_current_minus_prev is null there; leaving it in would let it sort as if delta=0.
+  const rows = bestFiltered().filter(r => r.delta_current_minus_prev !== null).slice().sort((a,b)=>b.delta_current_minus_prev-a.delta_current_minus_prev).slice(0,20);
+  if (!plotReady('deltaChart')) return;
+  Plotly.newPlot('deltaChart', [{x:rows.map(r=>r.delta_current_minus_prev), y:rows.map(r=>`${r.cohort} | ${r.subset} | ${r.featureset}`), type:'bar', orientation:'h', marker:{color:rows.map(r=>r.delta_current_minus_prev>=0?'#2e8b57':'#c96b2c')}}], {title:{text:'Top current-prev deltas among filtered best rows',font:{size:14}}, xaxis:{title:'Current AUC - prev AUC'}, margin:{l:260,t:40}}, {responsive:true,displayModeBar:false});
+}
+function populateGeneList(filter) {
+  const f = (filter || '').trim().toLowerCase();
+  const matches = f ? GENE_MASTER.filter(g => g.gene.toLowerCase().includes(f)) : GENE_MASTER;
+  const shown = matches.slice(0, 300);
+  const sel = document.getElementById('gcGene');
+  const prevVal = sel.value;
+  sel.innerHTML = shown.map(g => `<option value="${g.gene}">${g.gene} (top-100 in ${g.n_combos}/18, max|r|=${g.max_abs_r})</option>`).join('');
+  document.getElementById('gcGeneCount').textContent = `${matches.length} match${matches.length===1?'':'es'}` + (matches.length > shown.length ? ' (showing first 300 -- refine search)' : '');
+  if (shown.some(g => g.gene === prevVal)) sel.value = prevVal; else if (shown.length) sel.value = shown[0].gene;
+  renderGeneCorr();
+}
+function fmtP(p) {
+  if (p == null || Number.isNaN(p)) return 'n/a';
+  return p < 0.001 ? p.toExponential(2) : p.toFixed(4);
+}
+function renderGeneCorr() {
+  const coh = document.getElementById('gcCohort').value, gene = document.getElementById('gcGene').value;
+  if (!coh || !gene) return;
+  SUB_LV.forEach(sub => {
+    const id = 'gcScatter_' + sub;
+    if (!plotReady(id)) return;
+    const row = GENE_SCATTER.find(r => r.cohort === coh && r.subset === sub && r.gene === gene);
+    if (!row) { Plotly.newPlot(id, [], {title:{text:`${sub}: gene not present in this cohort's data`,font:{size:13}}}, {responsive:true,displayModeBar:false}); return; }
+    const expr = row.expr.split('|').map(Number);
+    const recur = row.recur.split('|').map(Number);
+    const subj = row.subj.split('|');
+    const mem = GENE_MEMBERSHIP.find(m => m.cohort === coh && m.subset === sub && m.gene === gene);
+    const rTxt = mem ? `r=${mem.r} (top-100 rank ${mem.rank})` : 'not top-100 here';
+    const groups = [
+      {label: 'No recurrence', val: 0, color: '#245f9d'},
+      {label: 'Recurrence', val: 1, color: '#c96b2c'}
+    ];
+    const traces = groups.map(gr => {
+      const idx = recur.map((r,i) => r === gr.val ? i : -1).filter(i => i >= 0);
+      return {
+        y: idx.map(i => expr[i]), x: idx.map(() => gr.label), name: gr.label,
+        type: 'box', boxpoints: 'all', jitter: 0.4, pointpos: 0, boxmean: true,
+        marker: {color: gr.color, size: 5, opacity: 0.7}, line: {color: gr.color},
+        text: idx.map(i => `${subj[i]}<br>${gene}=${expr[i].toFixed(2)}`), hoverinfo: 'text+y'
+      };
+    });
+    Plotly.newPlot(id, traces, {
+      title: {text: `${sub} - ${gene} - ${rTxt}<br>median: ${row.median0} vs ${row.median1}, Wilcoxon p=${fmtP(row.pval)}, n=${row.n}`, font: {size: 12.5}},
+      showlegend: false,
+      yaxis: {title: gene + ' (FPKM)'}, margin: {t: 55, l: 55, r: 15, b: 45}
+    }, {responsive: true, displayModeBar: false});
+  });
+}
+function populateCorrControls() {
+  document.getElementById('cpGeneset').innerHTML = [['full','Full gene set'],['topMAD','Top-MAD genes']].map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+  renderCorrPlot();
+}
+function renderCorrPlot() {
+  const src = document.getElementById('cpSource').value;
+  const geneset = document.getElementById('cpGeneset').value, method = document.getElementById('cpMethod').value;
+  const diagonal = document.getElementById('cpDiagonal').value === '1';
+  const rec = CORR_PLOTS.find(r => r.source === src && r.geneset === geneset && r.method === method && r.diagonal === diagonal);
+  const img = document.getElementById('cpImage');
+  if (!rec) { img.removeAttribute('src'); document.getElementById('cpCaption').textContent = 'No plot for this combination.'; return; }
+  img.src = 'data:image/png;base64,' + rec.img;
+  document.getElementById('cpCaption').textContent = rec.label;
+}
+function renderVenn() {
+  const vc = parseInt(document.getElementById('vnVarcut').value, 10);
+  const coh = document.getElementById('vnCohort').value;
+  const row = VENN_DATA.find(r => r.varcut === vc && r.cohort === coh);
+  if (!row) return;
+  document.getElementById('vnA').textContent = row.nature_com_only;
+  document.getElementById('vnB').textContent = row.prev_only;
+  document.getElementById('vnC').textContent = row.current_only;
+  document.getElementById('vnAB').textContent = row.nature_com_prev;
+  document.getElementById('vnAC').textContent = row.nature_com_current;
+  document.getElementById('vnBC').textContent = row.prev_current;
+  document.getElementById('vnABC').textContent = row.all_three;
+  const total = row.nature_com_only + row.prev_only + row.current_only + row.nature_com_prev + row.nature_com_current + row.prev_current + row.all_three;
+  document.getElementById('vnSummary').textContent = `${total} distinct genes shown -- ${row.all_three} in all 3 sources' top-${vc} MAD list.`;
+}
+function renderFamily() {
+  const f = id => document.getElementById(id).value, q = f('famSearch').toLowerCase();
+  const rows = activeFamily().filter(r => (!f('famSet') || r.set===f('famSet')) && (!f('famCohort') || r.cohort===f('famCohort')) && (!f('famFeatureset') || r.featureset===f('famFeatureset')) && (!f('famModel') || r.model===f('famModel')) && (!q || JSON.stringify(r).toLowerCase().includes(q)));
+  const cols = [{key:'set',label:'Set'},{key:'cohort',label:'Cohort'},{key:'featureset',label:'Feature set'},{key:'datatype',label:'Datatype'},{key:'model',label:'Model'},{key:'max_auc',label:'Max AUC'},{key:'median_auc',label:'Median AUC'},{key:'n_configs',label:'Configs'}];
+  renderTable(document.getElementById('familyTable'), rows, cols, r => `<tr><td>${r.set}</td><td>${r.cohort}</td><td>${r.featureset}</td><td>${r.datatype}</td><td class="">${labelModel(r.model)}</td><td>${fmt(r.max_auc)}</td><td>${fmt(r.median_auc)}</td><td>${r.n_configs}</td></tr>`, familyState, renderFamily);
+}
+function syncModelFilters() {
+  const models = activeModels();
+  ['fModel','vcModel','famModel','rocModel'].forEach(id => {
+    const sel = document.getElementById(id), old = sel.value;
+    const label = id === 'vcModel' ? 'All active' : 'All';
+    sel.innerHTML = `<option value="">${label}</option>`;
+    models.forEach(m => { const e=document.createElement('option'); e.value=m; e.textContent=labelModel(m); sel.appendChild(e); });
+    sel.value = models.includes(old) ? old : '';
+  });
+}
+function renderVarcut() {
+  const setSel = document.getElementById('vcSet').value, coh = document.getElementById('vcCohort').value, sub = document.getElementById('vcSubset').value, fs = document.getElementById('vcFeatureset').value, dt = document.getElementById('vcDatatype').value, model = document.getElementById('vcModel').value;
+  const sets = setSel === 'both' ? SETS : [setSel], models = model ? [model] : activeModels();
+  const colors = {glm_mad:'#245f9d',glm_cor:'#2e8b57',glm_mad_nosexmt:'#8e44ad',rf_mad:'#c0392b',xgb_mad:'#d68910', glm_natcommad:'#17a2b8'}, traces = [];
+  sets.forEach(s => models.forEach(m => {
+    const rows = activeLong().filter(r => r.set===s && r.cohort===coh && r.subset===sub && r.featureset===fs && r.datatype===dt && r.model===m).sort((a,b)=>a.varcut-b.varcut);
+    if (!rows.length) return;
+    const hasCi = rows.every(r => r.lo != null && r.hi != null);
+    const trace = {x:rows.map(r=>r.varcut),y:rows.map(r=>r.mean),name:`${labelModel(m)} (${s})`,mode:'lines+markers',line:{color:colors[m],dash:s==='prev'?'dot':'solid'}};
+    if (hasCi) trace.error_y = {type:'data',symmetric:false,array:rows.map(r=>r.hi-r.mean),arrayminus:rows.map(r=>r.mean-r.lo),visible:true,thickness:1};
+    traces.push(trace);
+  }));
+  if (!plotReady('varcutChart')) return;
+  Plotly.newPlot('varcutChart', traces, {xaxis:{title:'varcut'},yaxis:{title:'AUC',range:[0.3,1]},margin:{t:20}}, {responsive:true,displayModeBar:false});
+}
+
+
+function rocFiltered() {
+  const f = id => document.getElementById(id).value, q = f('rocSearch').toLowerCase();
+  const models = activeModels();
+  return ROC_DATA.filter(r => models.includes(r.model) && (!f('rocSet') || r.set===f('rocSet')) && (!f('rocCohort') || r.cohort===f('rocCohort')) && (!f('rocDatatype') || r.datatype===f('rocDatatype')) && (!f('rocFeatureset') || r.featureset===f('rocFeatureset')) && (!f('rocSubset') || r.subset===f('rocSubset')) && (!f('rocModel') || r.model===f('rocModel')) && (!f('rocVarcut') || String(r.varcut)===f('rocVarcut')) && (!q || JSON.stringify(r).toLowerCase().includes(q)));
+}
+function parseCurve(s) { return String(s).split('|').map(Number); }
+function curveArea(fpr, tpr) {
+  let area = 0;
+  for (let i = 1; i < fpr.length; i++) area += (fpr[i] - fpr[i-1]) * (tpr[i] + tpr[i-1]) / 2;
+  return area;
+}
+function orientedCurve(r) {
+  let fpr = parseCurve(r.fpr), tpr = parseCurve(r.tpr);
+  let area = curveArea(fpr, tpr), flipped = false;
+  if (area < 0.5) {
+    fpr = fpr.map(v => 1 - v).reverse();
+    tpr = tpr.map(v => 1 - v).reverse();
+    area = 1 - area;
+    flipped = true;
+  }
+  return {fpr, tpr, area, flipped};
+}
+function renderROC() {
+  const info = document.getElementById('rocInfo');
+  if (!ROC_DATA.length) {
+    info.textContent = 'ROC data is not embedded yet. Generate/copy results/roc_curves_202607.csv, then rebuild this dashboard.';
+    if (plotReady('rocChart')) Plotly.newPlot('rocChart', [], {xaxis:{title:'False positive rate', range:[0,1]}, yaxis:{title:'True positive rate', range:[0,1]}, annotations:[{text:'No ROC curve data embedded', x:0.5, y:0.5, showarrow:false}]}, {responsive:true,displayModeBar:false});
+    return;
+  }
+  // Sort/label by r.auc -- the SAME per-fold-averaged, fixed-direction AUC used
+  // everywhere else in this dashboard (Overview/Best-model/Headline/Explorer) --
+  // NOT by the pooled curve's own oriented area (c.area). Those are two different
+  // statistics (pooled-then-one-AUC vs average-of-per-fold-AUCs) that usually
+  // agree but can diverge sharply for tiny/imbalanced cohorts: e.g. one config
+  // here has r.auc=0.325 (real per-fold performance, a failure) while its pooled
+  // curve's raw area is 0.125, which the flip-for-display logic mirrors into a
+  // 0.875-looking curve -- sorting/labeling by that flipped number would rank a
+  // degenerate 41-patient/6-positive config as a "top" result, contradicting the
+  // trusted number shown everywhere else. c.area/c.flipped are kept ONLY to
+  // orient the drawn curve shape, never for ranking or the headline label.
+  const withCurve = rocFiltered().map(r => ({ r, c: orientedCurve(r) }));
+  const cap = 80;
+  // A plain "top-N by AUC" cap silently collapses to whichever narrow slice of
+  // conditions happens to have the most extreme values (in practice: the
+  // smallest, noisiest cohort/subset) -- so "All" filters never actually show
+  // variety across subset/datatype/featureset. Stratify instead: guarantee at
+  // least a couple of curves per (subset, datatype, featureset) bucket, then use
+  // any leftover budget on the next-highest-AUC curves overall.
+  const buckets = {};
+  withCurve.forEach(x => {
+    const k = [x.r.subset, x.r.datatype, x.r.featureset].join('|');
+    (buckets[k] = buckets[k] || []).push(x);
+  });
+  const bucketKeys = Object.keys(buckets);
+  Object.values(buckets).forEach(b => b.sort((a,b2) => b2.r.auc - a.r.auc));
+  const perBucket = Math.max(1, Math.floor(cap / bucketKeys.length));
+  let rows = [];
+  bucketKeys.forEach(k => rows.push(...buckets[k].slice(0, perBucket)));
+  if (rows.length < cap) {
+    const picked = new Set(rows);
+    const leftover = withCurve.filter(x => !picked.has(x)).sort((a,b) => b.r.auc - a.r.auc);
+    rows = rows.concat(leftover.slice(0, cap - rows.length));
+  }
+  rows.sort((a,b) => b.r.auc - a.r.auc);
+  info.textContent = `${withCurve.length} curves match; plotting ${rows.length}${withCurve.length > cap ? ` curves, stratified across ${bucketKeys.length} subset/datatype/featureset combinations. Refine filters to see fewer, more specific curves.` : '.'}`;
+  const colors = {glm_mad:'#245f9d', glm_cor:'#2e8b57', glm_mad_nosexmt:'#8e44ad', rf_mad:'#c0392b', xgb_mad:'#d68910', glm_natcommad:'#17a2b8'};
+  const traces = rows.map(({r, c}) => {
+    return {
+      x: c.fpr, y: c.tpr, mode:'lines', type:'scatter',
+      name: `${labelModel(r.model)} ${r.set} ${r.cohort} ${r.subset} ${r.featureset} ${r.datatype} v${r.varcut} AUC=${fmt(r.auc)}${c.flipped ? ' (curve shown flipped)' : ''}`,
+      line:{width:1.5, color:colors[r.model] || '#555'},
+      opacity: rows.length > 25 ? 0.55 : 0.9,
+      hovertemplate: `${r.set}<br>${r.cohort} / ${r.subset}<br>${r.featureset} / ${r.datatype}<br>${labelModel(r.model)} v${r.varcut}<br>AUC=${fmt(r.auc)}<br>n=${r.n_pred}${r.n_pos_pred!=null ? ` predictions (${r.n_pos_pred} recur / ${r.n_neg_pred} non-recur)` : ' patients'}<br>FPR=%{x:.3f}<br>TPR=%{y:.3f}<extra></extra>`
+    };
+  });
+  traces.push({x:[0,1], y:[0,1], mode:'lines', name:'Chance', line:{color:'#999', dash:'dot', width:1}, hoverinfo:'skip'});
+  if (!plotReady('rocChart')) return;
+  Plotly.newPlot('rocChart', traces, {xaxis:{title:'False positive rate', range:[0,1]}, yaxis:{title:'True positive rate', range:[0,1]}, margin:{t:20}, legend:{orientation:'v'}}, {responsive:true,displayModeBar:false});
+}
+
+function explorerFiltered() {
+  const f = id => document.getElementById(id).value, q = f('fSearch').toLowerCase();
+  return activeLong().filter(r => (!f('fSet') || r.set===f('fSet')) && (!f('fCohort') || r.cohort===f('fCohort')) && (!f('fDatatype') || r.datatype===f('fDatatype')) && (!f('fFeatureset') || r.featureset===f('fFeatureset')) && (!f('fSubset') || r.subset===f('fSubset')) && (!f('fModel') || r.model===f('fModel')) && (!f('fVarcut') || String(r.varcut)===f('fVarcut')) && (!q || JSON.stringify(r).toLowerCase().includes(q)));
+}
+function sortedExplorerRows() {
+  return explorerFiltered().slice().sort((a,b)=>compareVal(a,b,explorerSortCol,explorerSortDir));
+}
+function renderExplorer() {
+  const all = sortedExplorerRows(), maxPage = Math.max(0, Math.ceil(all.length / 40)-1);
+  explorerPage = Math.min(explorerPage, maxPage);
+  const pageRows = all.slice(explorerPage*40, explorerPage*40+40);
+  document.getElementById('fPageInfo').textContent = `${all.length} rows - page ${explorerPage+1} of ${maxPage+1}`;
+  const cols = [{key:'set',label:'Set'},{key:'cohort',label:'Cohort'},{key:'datatype',label:'Datatype'},{key:'featureset',label:'Feature set'},{key:'subset',label:'Subset'},{key:'model',label:'Model'},{key:'varcut',label:'Varcut'},{key:'mean',label:'Mean AUC'},{key:'sd',label:'SD'},{key:'n',label:'N'},{key:'ci',label:'AUC CI'}];
+  const table = document.getElementById('explorerTable');
+  table.innerHTML = '<thead><tr>' + cols.map(c => `<th data-key="${c.key}" class="${c.key===explorerSortCol ? (explorerSortDir>0?'sortasc':'sortdesc') : ''}">${c.label}</th>`).join('') + '</tr></thead><tbody>' + pageRows.map(r => `<tr><td>${r.set}</td><td>${r.cohort}</td><td>${r.datatype}</td><td>${r.featureset}</td><td>${r.subset}</td><td class="">${labelModel(r.model)}</td><td>${r.varcut}</td><td>${fmt(r.mean)}</td><td>${fmt(r.sd)}</td><td>${r.n}</td><td>${r.ci}</td></tr>`).join('') + '</tbody>';
+  table.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
+    const k = th.dataset.key; if (explorerSortCol === k) explorerSortDir *= -1; else { explorerSortCol = k; explorerSortDir = 1; }
+    explorerPage = 0; renderExplorer();
+  }));
+}
+function downloadExplorer() {
+  const rows = sortedExplorerRows(), cols = LONG_COLS.concat(['ci']);
+  const csv = [cols.join(',')].concat(rows.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g,'""')}"`).join(','))).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = includeXgb() ? 'auc_dashboard_filtered_all_methods.csv' : 'auc_dashboard_filtered_stable.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+function renderAll() {
+  syncModelFilters(); renderOverview(); renderHeadline(); renderHeatmaps(); renderBest(); renderFamily(); renderVarcut(); renderROC(); explorerPage=0; renderExplorer();
+}
+function init() {
+  fillAfterAll('bmCohort', COH_LV); fillAfterAll('bmSubset', SUB_LV); fillAfterAll('bmFeatureset', FS_LV);
+  const SETS_PLUS_NC = SETS.concat(['nature_com']); // headline/heatmap stay prev-vs-current only (SETS); these 3 filter dropdowns also offer nature_com
+  fillAfterAll('famSet', SETS_PLUS_NC); fillAfterAll('famCohort', COH_LV); fillAfterAll('famFeatureset', FS_LV);
+  fillSelect('vcSet', ['prev','current','nature_com'], true); fillSelect('vcCohort', COH_LV); fillSelect('vcSubset', SUB_LV); fillSelect('vcFeatureset', ['fpkm','fpkm_clinics']); fillSelect('vcDatatype', DM_LV);
+  document.getElementById('vcSet').value='both'; document.getElementById('vcCohort').value='wholeset'; document.getElementById('vcSubset').value='123vs0'; document.getElementById('vcFeatureset').value='fpkm'; document.getElementById('vcDatatype').value='fpkm';
+  fillAfterAll('rocSet', SETS_PLUS_NC); fillAfterAll('rocCohort', COH_LV); fillAfterAll('rocDatatype', DM_LV); fillAfterAll('rocFeatureset', FS_LV); fillAfterAll('rocSubset', SUB_LV); fillAfterAll('rocVarcut', VC_LV);
+  fillAfterAll('fSet', SETS_PLUS_NC); fillAfterAll('fCohort', COH_LV); fillAfterAll('fDatatype', DM_LV); fillAfterAll('fFeatureset', FS_LV); fillAfterAll('fSubset', SUB_LV); fillAfterAll('fVarcut', VC_LV);
+  document.getElementById('gcChartsRow').innerHTML = SUB_LV.map(s => `<div id="gcScatter_${s}" class="chart"></div>`).join('');
+  fillSelect('gcCohort', COH_LV.filter(c => c !== 'matched_rm5years'));  // gene correlation explorer has no nature_com gene-level data
+  document.getElementById('gcCohort').value = 'wholeset';
+  document.getElementById('gcCohort').addEventListener('change', renderGeneCorr);
+  document.getElementById('gcGene').addEventListener('change', renderGeneCorr);
+  document.getElementById('gcGeneSearch').addEventListener('input', e => populateGeneList(e.target.value));
+  populateGeneList('');
+  document.getElementById('cpSource').addEventListener('change', populateCorrControls);
+  ['cpGeneset','cpMethod','cpDiagonal'].forEach(id => document.getElementById(id).addEventListener('change', renderCorrPlot));
+  populateCorrControls();
+  document.getElementById('vnVarcut').addEventListener('change', renderVenn);
+  document.getElementById('vnCohort').addEventListener('change', renderVenn);
+  renderVenn();
+  document.querySelectorAll('#headline .btn').forEach(b => b.addEventListener('click', () => { document.querySelectorAll('#headline .btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); headlineMetric=b.dataset.metric; renderHeadline(); }));
+  ['bmCohort','bmSubset','bmFeatureset','bmSearch'].forEach(id => document.getElementById(id).addEventListener('input', renderBest));
+  ['famSet','famCohort','famFeatureset','famModel','famSearch'].forEach(id => document.getElementById(id).addEventListener('input', renderFamily));
+  ['vcSet','vcCohort','vcSubset','vcFeatureset','vcDatatype','vcModel'].forEach(id => document.getElementById(id).addEventListener('change', renderVarcut));
+  ['rocSet','rocCohort','rocDatatype','rocFeatureset','rocSubset','rocModel','rocVarcut'].forEach(id => document.getElementById(id).addEventListener('change', renderROC));
+  document.getElementById('rocSearch').addEventListener('input', renderROC);
+  ['fSet','fCohort','fDatatype','fFeatureset','fSubset','fModel','fVarcut'].forEach(id => document.getElementById(id).addEventListener('change', () => { explorerPage=0; renderExplorer(); }));
+  document.getElementById('fSearch').addEventListener('input', () => { explorerPage=0; renderExplorer(); });
+  document.getElementById('fPrev').addEventListener('click', () => { if (explorerPage>0) { explorerPage--; renderExplorer(); } });
+  document.getElementById('fNext').addEventListener('click', () => { explorerPage++; renderExplorer(); });
+  document.getElementById('fDownload').addEventListener('click', downloadExplorer);
+  document.getElementById('fReset').addEventListener('click', () => { ['fSet','fCohort','fDatatype','fFeatureset','fSubset','fModel','fVarcut','fSearch'].forEach(id => document.getElementById(id).value=''); explorerPage=0; renderExplorer(); });
+  document.getElementById('rocReset').addEventListener('click', () => { ['rocSet','rocCohort','rocDatatype','rocFeatureset','rocSubset','rocModel','rocVarcut','rocSearch'].forEach(id => document.getElementById(id).value=''); renderROC(); });
+  document.getElementById('bmReset').addEventListener('click', () => { ['bmCohort','bmSubset','bmFeatureset','bmSearch'].forEach(id => document.getElementById(id).value=''); renderBest(); });
+  document.getElementById('includeXgb').addEventListener('change', renderAll);
+  window.addEventListener('plotly-ready', () => { renderHeadline(); renderHeatmaps(); renderDeltaChart(); renderVarcut(); renderROC(); renderGeneCorr(); });
+  renderCohorts(); renderAll();
+}
+init();
+</script>
+</body>
+</html>
