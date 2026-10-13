@@ -65,6 +65,30 @@ assert "datatypes = dm_lv," in s, "meta datatypes anchor not found"
 s = s.replace("datatypes = dm_lv,", "datatypes = as.list(dm_lv),", 1)
 s = s.replace("subsets = cmp_lv,", "subsets = as.list(cmp_lv),", 1)
 
+# 8) Cutoff panel: (a) hide the ROC chart (keep the sens/spec + optimal-cutoff text),
+#    (b) keep ONLY the Calibrated-CV basis. Applied to the template string at build
+#    time via two gsub() lines appended after the readLines() anchor.
+#    plotReady() returns true whenever Plotly is loaded (it ignores the element), and
+#    the text readout is set BEFORE each Plotly.newPlot call, so hiding the (still
+#    existing) div removes the plot without throwing. coMode() then always = 'calib'.
+hide_div_r = (
+  'tpl <- gsub(\'<div id="coChart" style="height:430px"></div>\', '
+  '\'<div id="coChart" style="display:none"></div>\', tpl, fixed = TRUE)'
+)
+only_calib_r = (
+  'tpl <- gsub('
+  '\'<select id="coMode"><option value="calib" selected>Calibrated CV (deployable, recommended)</option>'
+  '<option value="vavg">Per-fold vertical-averaged (honest trade-off)</option>'
+  '<option value="pooled">Pooled CV (raw probability)</option>'
+  '<option value="insample">Full-data model (in-sample, optimistic)</option></select>\', '
+  '\'<select id="coMode"><option value="calib" selected>Calibrated CV (deployable)</option></select>\', '
+  'tpl, fixed = TRUE)'
+)
+# append both gsubs right after the vcDatatype fix line (which already follows tpl_read)
+anchor8 = tpl_read + "\n" + fix_line
+assert anchor8 in s, "cutoff-panel anchor not found"
+s = s.replace(anchor8, anchor8 + "\n" + hide_div_r + "\n" + only_calib_r, 1)
+
 changed = sum(1 for a,b in [
   ('dm_lv  <- c("normalized")', s),
   ('cmp_lv <- c("123vs0","12vs0")', s),

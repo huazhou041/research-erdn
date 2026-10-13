@@ -257,6 +257,8 @@ plotly_js <- paste(readLines("codes_20260713/plotly-2.32.0.min.js", warn = FALSE
 ## ============================ assemble ======================================
 tpl <- paste(readLines("codes_20260713/dashboard_template_fsmethods_cmp.html", warn = FALSE), collapse = "\n")
 tpl <- gsub("getElementById('vcDatatype').value='fpkm'", "getElementById('vcDatatype').value='normalized'", tpl, fixed = TRUE)
+tpl <- gsub('<div id="coChart" style="height:430px"></div>', '<div id="coChart" style="display:none"></div>', tpl, fixed = TRUE)
+tpl <- gsub('<select id="coMode"><option value="calib" selected>Calibrated CV (deployable, recommended)</option><option value="vavg">Per-fold vertical-averaged (honest trade-off)</option><option value="pooled">Pooled CV (raw probability)</option><option value="insample">Full-data model (in-sample, optimistic)</option></select>', '<select id="coMode"><option value="calib" selected>Calibrated CV (deployable)</option></select>', tpl, fixed = TRUE)
 sub1 <- function(tpl, tag, val) sub(tag, val, tpl, fixed = TRUE)
 tpl <- sub1(tpl, "__CMP_TABLE__", mk_cmp_table(full$d, smoke$d))
 tpl <- sub1(tpl, "__PLOTLY_JS__", plotly_js)
